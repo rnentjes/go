@@ -6,44 +6,58 @@
 package main
 
 import (
-	"encoding/gob"
-	"os"
-	"bufio"
+	"fmt"
+	"astraeus.nl/persistence"
+	"reflect"
 )
 
-type Command struct {
- 	// boolean remove
-	// some id
-	// type of data
-	// data
+type MyData struct {
+	persistence.PersistentParent
+	name 	string
 }
 
-type PersistentStore struct {
-	// map of types of data with therein
-	// map of id with data objects
+type OtherData struct {
+	persistence.PersistentParent
+	Firstname 	string
+	Lastname 	string
+	Child		*persistence.Persistent
 }
 
-func (* PersistentStore) loadData(path string) {
-    var command Command
-	var (
-		file *os.File
-		err
-	)
-
-	if file, err = os.Open(path); err != nil {
-		return nil
-	}
-
-	defer file.Close()
-
-	reader := bufio.NewReader(file)
-	dec := gob.NewDecoder(&reader);
-
-	dec.Decode(&store);
-
-	return &store
-}
+var store *persistence.PersistentStore
 
 func main() {
+	store = persistence.Open("path")
 
+	var md *MyData
+	var od *OtherData
+	md = new(MyData);
+	md.name = "Rien"
+
+	store.Save(md)
+
+	md = new(MyData);
+	md.name = "Pipo"
+
+	store.Save(md)
+
+	od = new(OtherData)
+	od.Firstname	= "Rien"
+	od.Lastname 	= "Nentjes"
+
+	store.Save(od)
+
+	fmt.Println(reflect.ValueOf(od))
+	fmt.Println(reflect.ValueOf(od))
+
+	fmt.Println(store)
+	fmt.Println(store.Data["*persistence.PersistentParent"])
+	fmt.Println(store.Data["*persistence.PersistentParent"][1])
+
+	var pers = store.Find("*persistence.PersistentParent", 2)
+
+	fmt.Println(pers)
+
+	var other = store.Find("*persistence.PersistentParent", 3)
+
+	fmt.Println(other)
 }
