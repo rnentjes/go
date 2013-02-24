@@ -22,6 +22,8 @@ type Command struct {
 type Persistent interface {
 	Type() string
 	Id() uint64
+	GenerateId()
+	Clone() Persistent
 }
 
 var id uint64 = 0
@@ -30,15 +32,15 @@ func NextId() uint64 {
 	return atomic.AddUint64( &id, 1 )
 }
 
-type PersistentParent struct {
+type PersistentStruct struct {
 	id uint64
 }
 
-func (p *PersistentParent) Type() string {
+func (p *PersistentStruct) Type() string {
 	return reflect.TypeOf(p).String()
 }
 
-func (p *PersistentParent) Id() uint64 {
+func (p *PersistentStruct) Id() uint64 {
 	if (p.id == 0) {
 		p.id = NextId()
 	}
@@ -46,10 +48,25 @@ func (p *PersistentParent) Id() uint64 {
 	return p.id
 }
 
+func (p *PersistentStruct) GenerateId() {
+	p.id = NextId()
+}
+
+func (p *PersistentStruct) Clone() Persistent{
+	var result *PersistentStruct
+
+	result = new(PersistentStruct)
+
+	result.id = p.id
+
+	return result
+}
+
 type PersistentStore struct {
 	// map of types of data with therein
 	// map of id with data objects
 	Data 	map[string]map[uint64]Persistent
+	nextId 	map[string]uint64
 	Writer 	gob.Decoder
 }
 
@@ -107,6 +124,10 @@ func(p *PersistentStore) Save(pers Persistent) {
 
 	if (p.Data[pers.Type()] == nil) {
 		p.Data[pers.Type()] = make(map[uint64]Persistent)
+	}
+
+	if (pers.Id() == 0) {
+		pers.GenerateId()
 	}
 
 	p.Data[pers.Type()][pers.Id()] = pers
