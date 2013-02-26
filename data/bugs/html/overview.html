@@ -8,8 +8,11 @@
     </tr>
     </thead>
     <tbody>
-    <tr>
-
-    </tr>
+        {{range .}}
+        <tr>
+            <td>{{.Id}}</td>
+            <td>{{.Description}}</td>
+        </tr>
+        {{end}}
     </tbody>
 </table>
