@@ -5,6 +5,7 @@
     <tr>
         <th>Id</th>
         <th>Description</th>
+        <th></th>
     </tr>
     </thead>
     <tbody>
@@ -12,7 +13,10 @@
         <tr>
             <td>{{.Id}}</td>
             <td>{{.Description}}</td>
+            <td><a href="/edit/{{.Id}}">edit</a></td>
         </tr>
         {{end}}
     </tbody>
 </table>
+
+        <a href="/new">new</a>

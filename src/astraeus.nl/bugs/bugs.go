@@ -31,16 +31,30 @@ func CreateBug(description string) *Bug {
 }
 
 type Bugs struct {
-	Bugs 	[]*Bug
+	Bugs 	map[uint64]*Bug
 }
 
 func CreateBugs() *Bugs {
 	result := new(Bugs)
-	result.Bugs = make([]*Bug, 0)
+	result.Bugs = make(map[uint64]*Bug, 0)
 
 	return result
 }
 
-func (bugs *Bugs) AddBug(bug *Bug) {
-	bugs.Bugs = append(bugs.Bugs, bug)
+func (bugs *Bugs) SaveBug(bug *Bug) {
+	bugs.Bugs[bug.Id()] = bug
+}
+
+func (bugs *Bugs) GetBug(id uint64) *Bug {
+	return bugs.Bugs[id]
+}
+
+var bugs *Bugs
+
+func GetBugs() *Bugs {
+	if bugs == nil {
+		bugs = CreateBugs()
+	}
+
+	return bugs
 }

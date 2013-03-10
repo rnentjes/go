@@ -6,34 +6,45 @@
 package page
 
 import (
-	"io"
 	"net/http"
+	"html/template"
 )
 
-type Renderer interface {
-	Render(w *io.Writer)
-}
-
 type Page interface {
-
-	Get(parameters map[string]([]string))
-	Post()
-	ServeHttp(w http.ResponseWriter, r *http.Request)
-
+	Init (string)
+	Post (*http.Request) (string)
+	Get (*http.Request) (string)
+	Model () (interface {})
+	Template () (*template.Template)
 }
 
-type PageMapping struct {
-	pages map[string]*Page
+func HandleRequest(page Page, w http.ResponseWriter, r *http.Request) {
+	var redirect string
+
+	if (r.Method == "POST") {
+		redirect = page.Post(r)
+	} else {
+		redirect = page.Get(r)
+	}
+
+	if redirect == "" {
+		model := page.Model()
+		templ := page.Template()
+
+		err := templ.Execute(w, model)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	} else {
+		http.Redirect(w, r, redirect, http.StatusFound)
+	}
 }
 
-func (pm *PageMapping) Add(uri string, page *Page) {
-	pm.pages[uri] = page
+func MakeHandler(page Page, uri string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		page.Init(r.URL.Path[len(uri):])
+
+		HandleRequest(page, w,r)
+	}
 }
-
-func (pm *PageMapping) Get(uri string) *Page {
-	return pm.pages[uri]
-}
-
-
-
-
