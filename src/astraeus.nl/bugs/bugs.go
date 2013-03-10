@@ -10,10 +10,14 @@ import (
 	"os"
 	"encoding/gob"
 	"strconv"
+	"fmt"
+	"io/ioutil"
+	"strings"
 )
 
 type Bug struct {
 	id 			uint64
+	Title		string
 	Description string
 }
 
@@ -27,9 +31,10 @@ func (b *Bug) Id() uint64 {
 	return b.id
 }
 
-func CreateBug(description string) *Bug {
+func CreateBug(title string, description string) *Bug {
 	b := new(Bug)
 	b.id = createId()
+	b.Title = title
 	b.Description = description
 
 	return b
@@ -43,20 +48,54 @@ func createBugs() *Bugs {
 	result := new(Bugs)
 	result.Bugs = make(map[uint64]*Bug, 0)
 
+	result.loadBugs()
+
 	return result
+}
+func (bugs *Bugs) loadBugs() {
+	var maxid uint64 = 0
+
+	dirname := "data/bugs/bugs/"
+	entries, err := ioutil.ReadDir(dirname)
+
+	if err != nil {
+		panic("bugs directory not found")
+	}
+
+	for i := range entries {
+		if !entries[i].IsDir() {
+			name := entries[i].Name()
+			if strings.HasSuffix(name, ".bug") {
+				id, _ := strconv.ParseUint(name[0:len(name)-4], 10, 64)
+				bugs.loadBug(id)
+
+				if id > maxid {
+					maxid = id
+				}
+			}
+		}
+	}
+
+	atomic.AddUint64( &id, maxid - id )
 }
 
 func (bugs *Bugs) persistBug(bug *Bug) {
 	filename := "data/bugs/bugs/"+strconv.FormatUint(bug.Id(), 10)+".bug"
 	file, err := os.Open(filename)
-	defer file.Close()
 
 	if err == nil {
+		defer file.Close()
 		os.Rename(filename, filename+".prev")
 	}
 
 	file, err = os.Create(filename)
 	defer file.Close()
+
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Saving bug ", bug.Description)
 
 	gob.NewEncoder(file).Encode(bug)
 }
@@ -67,12 +106,15 @@ func (bugs *Bugs) loadBug(id uint64) *Bug {
 	defer file.Close()
 
 	if err == nil {
-		bug := new(Bug)
+		fmt.Println("Found bug file ", file)
+		var bug Bug
 		gob.NewDecoder(file).Decode(&bug)
+		bug.id = id
 
-		bugs.Bugs[id] = bug
+		fmt.Println("Loaded bug ", bug.Description)
+		bugs.Bugs[id] = &bug
 
-		return bug
+		return &bug
 	}
 
 	return nil
@@ -84,9 +126,13 @@ func (bugs *Bugs) SaveBug(bug *Bug) {
 }
 
 func (bugs *Bugs) GetBug(id uint64) *Bug {
-	bug := bugs.Bugs[id]
+	var bug *Bug
+
+	bug = bugs.Bugs[id]
 
 	if bug == nil {
+		fmt.Print("Loading bug: ")
+		fmt.Println(id)
 		bug = bugs.loadBug(id)
 	}
 
