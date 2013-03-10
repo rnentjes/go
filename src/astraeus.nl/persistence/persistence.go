@@ -22,8 +22,8 @@ type Command struct {
 type Persistent interface {
 	Type() string
 	Id() uint64
-	GenerateId()
 	Clone() Persistent
+	GenerateId()
 }
 
 var id uint64 = 0
@@ -31,6 +31,21 @@ var id uint64 = 0
 func NextId() uint64 {
 	return atomic.AddUint64( &id, 1 )
 }
+
+type PersistentReference struct {
+	typeName string
+	id uint64
+}
+
+func (pr *PersistentReference) Get() *Persistent {
+	return nil
+}
+
+/*
+func (pr *PersistentReference) Set(p *Persistent) {
+	pr.typeName = p.Type()
+	pr.id = p.Id()
+}*/
 
 type PersistentStruct struct {
 	id uint64
@@ -52,7 +67,7 @@ func (p *PersistentStruct) GenerateId() {
 	p.id = NextId()
 }
 
-func (p *PersistentStruct) Clone() Persistent{
+func (p *PersistentStruct) Clone() Persistent {
 	var result *PersistentStruct
 
 	result = new(PersistentStruct)

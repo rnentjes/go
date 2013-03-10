@@ -8,12 +8,16 @@ package bugs
 import (
 	"sync/atomic"
 	"os"
-	"encoding/gob"
 	"strconv"
-	"fmt"
 	"io/ioutil"
 	"strings"
+	"encoding/json"
 )
+
+type Persistent interface {
+	Id() uint64
+	PersistentTypeName() (string)
+}
 
 type Bug struct {
 	id 			uint64
@@ -79,7 +83,7 @@ func (bugs *Bugs) loadBugs() {
 	atomic.AddUint64( &id, maxid - id )
 }
 
-func (bugs *Bugs) persistBug(bug *Bug) {
+func (bugs *Bugs) saveBug(bug *Bug) {
 	filename := "data/bugs/bugs/"+strconv.FormatUint(bug.Id(), 10)+".bug"
 	file, err := os.Open(filename)
 
@@ -95,9 +99,7 @@ func (bugs *Bugs) persistBug(bug *Bug) {
 		panic(err)
 	}
 
-	fmt.Println("Saving bug ", bug.Description)
-
-	gob.NewEncoder(file).Encode(bug)
+	json.NewEncoder(file).Encode(bug)
 }
 
 func (bugs *Bugs) loadBug(id uint64) *Bug {
@@ -106,12 +108,10 @@ func (bugs *Bugs) loadBug(id uint64) *Bug {
 	defer file.Close()
 
 	if err == nil {
-		fmt.Println("Found bug file ", file)
 		var bug Bug
-		gob.NewDecoder(file).Decode(&bug)
+		json.NewDecoder(file).Decode(&bug)
 		bug.id = id
 
-		fmt.Println("Loaded bug ", bug.Description)
 		bugs.Bugs[id] = &bug
 
 		return &bug
@@ -121,8 +121,19 @@ func (bugs *Bugs) loadBug(id uint64) *Bug {
 }
 
 func (bugs *Bugs) SaveBug(bug *Bug) {
-	bugs.persistBug(bug)
+	bugs.saveBug(bug)
 	bugs.Bugs[bug.Id()] = bug
+}
+
+func (bugs *Bugs) DeleteBug(bug *Bug) {
+	filename := "data/bugs/bugs/"+strconv.FormatUint(bug.Id(), 10)+".bug"
+	err := os.Remove(filename)
+
+	if err != nil {
+		panic("Unable to remove buf file: "+strconv.FormatUint(bug.Id(), 10))
+	}
+
+	delete(bugs.Bugs, bug.Id())
 }
 
 func (bugs *Bugs) GetBug(id uint64) *Bug {
@@ -131,8 +142,6 @@ func (bugs *Bugs) GetBug(id uint64) *Bug {
 	bug = bugs.Bugs[id]
 
 	if bug == nil {
-		fmt.Print("Loading bug: ")
-		fmt.Println(id)
 		bug = bugs.loadBug(id)
 	}
 

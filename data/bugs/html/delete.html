@@ -1,0 +1,7 @@
+<h1>Delete bug {{.Id}}</h1>
+
+<form action="/delete/{{.Id}}" method="POST">
+    <div>{{.Title}}</div>
+    <div>{{.Description}}</div>
+    <div><input type="submit" name="action" value="Delete"><input type="submit" name="action" value="Cancel"></div>
+</form>

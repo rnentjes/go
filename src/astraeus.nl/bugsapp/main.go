@@ -26,6 +26,7 @@ func main() {
 	http.HandleFunc("/notfound.html", notFoundHandler)
 	http.HandleFunc("/overview", page.MakeHandler(new(bugs.BugsOverviewPage), "/overview"))
 	http.HandleFunc("/edit/", page.MakeHandler(new(bugs.BugsEditPage), "/edit/"))
+	http.HandleFunc("/delete/", page.MakeHandler(new(bugs.BugsDeletePage), "/delete/"))
 	http.HandleFunc("/new", page.MakeHandler(new(bugs.BugsNewPage), ""))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/overview", http.StatusFound)

@@ -14,6 +14,7 @@ import (
 type MyData struct {
 	persistence.PersistentStruct
 	name 	string
+	user persistence.PersistentReference
 }
 
 type OtherData struct {
